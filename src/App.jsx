@@ -1,12 +1,12 @@
-import './App.css'
+import React from 'react';
+import ApiChainBuilder from './ApiChainBuilder.jsx';
 
 function App() {
-
   return (
-    <>
-      <h1>API Chaning Dashboard</h1>
-    </>
-  )
+    <div className="App">
+      <ApiChainBuilder />
+    </div>
+  );
 }
 
-export default App
+export default App;
