@@ -1,19 +1,19 @@
-
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
-import Modal from './Modal.jsx'; 
-
+import Modal from './Modal.jsx';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ApiChainBuilder = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [postData, setPostData] = useState({ title: '', body: '' });
   const [posts, setPosts] = useState([]);
-  const [loadingComments, setLoadingComments] = useState(false);
+  const [loadingPostId, setLoadingPostId] = useState(null);
   const [comments, setComments] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activePostId, setActivePostId] = useState(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -45,7 +45,12 @@ const ApiChainBuilder = () => {
 
   const handleCreatePost = async () => {
     if (!selectedUser) {
-      alert('Please select a user before creating a post.');
+      toast.error('Please select a user before creating a post.');
+      return;
+    }
+
+    if (!postData.title || !postData.body) {
+      toast.error('Both title and body fields must be filled.');
       return;
     }
 
@@ -56,27 +61,31 @@ const ApiChainBuilder = () => {
         userId: selectedUser.id,
       });
       setPosts(prevPosts => [...prevPosts, response.data]);
-      setPostData({ title: '', body: '' }); 
+      setPostData({ title: '', body: '' });
+      toast.success('Post created successfully!');
     } catch (error) {
       console.error('Error creating post:', error);
+      toast.error('Failed to create the post.');
     }
   };
 
   const handleViewComments = async (postId) => {
-    setLoadingComments(true);
+    setLoadingPostId(postId);
+    setActivePostId(postId);
     try {
       const response = await axios.get(`https://jsonplaceholder.typicode.com/comments?postId=${postId}`);
       setComments(response.data);
-      setIsModalOpen(true); 
+      setIsModalOpen(true);
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
-      setLoadingComments(false);
+      setLoadingPostId(null);
     }
   };
 
   return (
     <div className="container mx-auto p-5 md:p-10 bg-gray-50 min-h-screen">
+      <ToastContainer />
       <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-6">API Chain Dashboard</h1>
 
       <div className={`grid grid-cols-1 ${selectedUser ? 'md:grid-cols-2' : ''} gap-5 justify-center`}>
@@ -85,10 +94,18 @@ const ApiChainBuilder = () => {
       </div>
 
       {selectedUser && posts.length > 0 && (
-        <PostsSection posts={posts} loadingComments={loadingComments} handleViewComments={handleViewComments} />
+        <PostsSection 
+          posts={posts} 
+          loadingPostId={loadingPostId} 
+          handleViewComments={handleViewComments} 
+        />
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} comments={comments} />
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        comments={comments} 
+      />
     </div>
   );
 };
@@ -135,8 +152,7 @@ const CreatePost = ({ postData, setPostData, handleCreatePost }) => (
   </div>
 );
 
-
-const PostsSection = ({ posts, loadingComments, handleViewComments }) => (
+const PostsSection = ({ posts, loadingPostId, handleViewComments }) => (
   <div className="mt-10 p-4 bg-gray-100 rounded-lg shadow-md">
     <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">User Posts</h2>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -154,7 +170,7 @@ const PostsSection = ({ posts, loadingComments, handleViewComments }) => (
               onClick={() => handleViewComments(post.id)}
               className="w-full py-2 px-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-200"
             >
-              {loadingComments ? 'Loading Comments...' : 'View Comments'}
+              {loadingPostId === post.id ? 'Loading...' : 'View Comments'}
             </button>
           </div>
         </div>
@@ -163,5 +179,11 @@ const PostsSection = ({ posts, loadingComments, handleViewComments }) => (
   </div>
 );
 
-
 export default ApiChainBuilder;
+
+
+
+
+
+
+
